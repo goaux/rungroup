@@ -1,7 +1,8 @@
 # rungroup
 A Go module for managing concurrent tasks with automatic cancellation when any task completes or fails.
 
-
+[![Go Reference](https://pkg.go.dev/badge/github.com/goaux/rungroup.svg)](https://pkg.go.dev/github.com/goaux/rungroup)
+[![Go Report Card](https://goreportcard.com/badge/github.com/goaux/rungroup)](https://goreportcard.com/report/github.com/goaux/rungroup)
 
 `rungroup` is a Go module that provides a way to manage and synchronize
 concurrent tasks. Its primary feature is the ability to cancel all goroutines
