@@ -1,0 +1,4 @@
+github.com/goaux/timer v1.0.0 h1:p/i/A8txU3xlFDmKJEM/jfd61frgNYEHqlaWYqHn9TQ=
+github.com/goaux/timer v1.0.0/go.mod h1:kAhAdGb1hZBiwYfzCmNYukcLMdsWgvESW1wrBbq7B54=
+github.com/goaux/waitgroup v1.0.0 h1:XD05UPRMOeIJUuXgtrdE3Ef6enhNA2v6WLG4or7kKEA=
+github.com/goaux/waitgroup v1.0.0/go.mod h1:24sreE5Xf94gyQ3TCNgeaWU2ywxaZkIlEW9DU2oRg0A=
