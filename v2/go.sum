@@ -1,0 +1,4 @@
+github.com/goaux/stacktrace/v2 v2.3.1 h1:rUqaUKLkHVNJ8trK4sdmETIcisKk985Sh8tTZC7DZeY=
+github.com/goaux/stacktrace/v2 v2.3.1/go.mod h1:WT0j+ibEaqyL8LiVI69FlMcGirtjCg92nXj/YT/vfCM=
+github.com/goaux/waitgroup v1.0.0 h1:XD05UPRMOeIJUuXgtrdE3Ef6enhNA2v6WLG4or7kKEA=
+github.com/goaux/waitgroup v1.0.0/go.mod h1:24sreE5Xf94gyQ3TCNgeaWU2ywxaZkIlEW9DU2oRg0A=
