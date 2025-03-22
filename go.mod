@@ -1,3 +1,4 @@
+// Deprecated: use github.com/goaux/rungroup/v2 instead.
 module github.com/goaux/rungroup
 
 go 1.20
