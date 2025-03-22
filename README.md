@@ -1,107 +1,156 @@
-# rungroup
-A Go module for managing concurrent tasks with automatic cancellation when any task completes or fails.
+# rungroup/v2
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/goaux/rungroup.svg)](https://pkg.go.dev/github.com/goaux/rungroup)
-[![Go Report Card](https://goreportcard.com/badge/github.com/goaux/rungroup)](https://goreportcard.com/report/github.com/goaux/rungroup)
+> **Note:** This is the documentation for **v2** of the `rungroup` module.
+> For **v1** documentation, see [README.v1.md](./README.v1.md).
 
-`rungroup` is a Go module that provides a way to manage and synchronize
-concurrent tasks. Its primary feature is the ability to cancel all goroutines
-when any one of them completes. This package is particularly useful for
-scenarios where you need to run multiple operations concurrently but want to
-stop all of them as soon as any one operation completes or fails.
+A Go module for managing and coordinating concurrent tasks with fine-grained control over cancellation.
 
-## Features
+[![Go Reference](https://pkg.go.dev/badge/github.com/goaux/rungroup/v2.svg)](https://pkg.go.dev/github.com/goaux/rungroup/v2)
+[![Go Report Card](https://goreportcard.com/badge/github.com/goaux/rungroup/v2)](https://goreportcard.com/report/github.com/goaux/rungroup/v2)
 
-- Manage multiple goroutines as a group
-- Automatic cancellation of all tasks when one completes
-- Support for timeouts
-- Easy-to-use API
+`rungroup/v2` is a Go module that provides a robust mechanism for managing and coordinating a collection of goroutines. It allows you to start multiple tasks concurrently and coordinate their execution with fine-grained control over cancellation behavior.
+
+## Improvements over v1
+
+Version 2 of `rungroup` addresses several limitations present in v1:
+
+- **Non-terminating tasks**: v1 automatically triggered cancellation when any task completed. v2 allows tasks to run independently with explicit control over cancellation behavior.
+- **Error propagation**: v2 allows specifying an error when calling `Cancel`, providing more informative cancellation reasons.
+- **Zero value safety**: v1 panicked when used with a zero value. v2 is safe to use with zero values, automatically initializing with `context.Background`.
+- **Nested tasks**: v1 prevented starting new tasks within the same group from within a running task. v2 allows nested tasks to be started within the same group.
 
 ## Installation
 
-To install the `rungroup` module, use `go get`:
+To install the `rungroup/v2` module, use `go get`:
 
 ```
-go get github.com/goaux/rungroup
+go get github.com/goaux/rungroup/v2
 ```
 
 ## Usage
 
-Here's a basic example of how to use the `rungroup` module:
+Here's a basic example of how to use the `rungroup/v2` module:
 
 ```go
 package main
 
 import (
-    "context"
-    "fmt"
-    "time"
+	"context"
+	"fmt"
+	"time"
 
-    "github.com/goaux/rungroup"
-	"github.com/goaux/timer"
+	"github.com/goaux/rungroup/v2"
+	"github.com/goaux/stacktrace/v2"
 )
 
 func main() {
-	// Create a new group with no timeout
-	rg := rungroup.New(context.Background())
+	// Create a new group
+	gr := rungroup.New(context.Background())
 
-	// Add tasks to the group
-	rg.Go(func(ctx context.Context) error {
-		if err := timer.Sleep(ctx, 150*time.Millisecond); err != nil {
-			fmt.Println("task1 canceled")
-			return err
+	// Ensure we clean up resources
+	defer gr.Close()
+
+	// Add a task that will finish after 150ms
+	gr.Go(func(ctx context.Context) {
+		select {
+		case <-time.After(150 * time.Millisecond):
+			fmt.Println("Task 1 completed")
+		case <-ctx.Done():
+			fmt.Println("Task 1 canceled")
 		}
-		fmt.Println("task1 done")
-		return nil
 	})
 
-	rg.Go(func(ctx context.Context) error {
-		if err := timer.Sleep(ctx, 300*time.Millisecond); err != nil {
-			fmt.Println("task2 canceled")
-			return err
+	// Add a task that will finish after 300ms
+	// This task will only be canceled if explicitly requested
+	gr.Go(func(ctx context.Context) {
+		select {
+		case <-time.After(300 * time.Millisecond):
+			fmt.Println("Task 2 completed")
+		case <-ctx.Done():
+			fmt.Println("Task 2 canceled")
 		}
-		fmt.Println("task2 done")
+	})
+
+	// Add a task that will cancel the group on completion
+	gr.GoCancelOnFinish(func(ctx context.Context) error {
+		time.Sleep(100 * time.Millisecond)
+		fmt.Println("Task 3 completed, canceling group")
 		return nil
 	})
 
 	// Wait for all tasks to complete or be canceled
-	err := rg.Wait()
+	err := gr.Wait()
 	if err != nil {
-		fmt.Printf("must not error: %v\n", err)
+		fmt.Printf("Group canceled with error: %v\n", stacktrace.Format(err))
 	} else {
-		fmt.Println("ok")
+		fmt.Println("All tasks completed successfully")
 	}
 }
 ```
 
-In this example, the first task completes after 150 milliseconds, which
-triggers the cancellation of the second task. The `Wait` method returns when
-all tasks have either completed or been canceled.
+## API Overview
 
-## API
+### Creating a Group
 
-### `New(ctx context.Context) *Group`
+```go
+// Create a new Group with a parent context
+gr := rungroup.New(ctx)
 
-Creates a new `Group` with the given context.
+// A zero value is also valid
+var gr rungroup.Group
+```
 
-### `NewTimeout(ctx context.Context, d time.Duration) *Group`
+### Starting Tasks
 
-Creates a new `Group` with the given context and timeout duration.
+```go
+// Start a task without automatic cancellation
+gr.Go(func(ctx context.Context) {
+    // Your task logic here
+})
 
-### `(g *Group) Go(task func(context.Context) error)`
+// Start a task that cancels the group when it completes (success or failure)
+gr.GoCancelOnFinish(func(ctx context.Context) error {
+    // Your task logic here
+    return nil
+})
 
-Starts a new goroutine in the `Group`.
+// Start a task that cancels the group only on successful completion
+gr.GoCancelOnSuccess(func(ctx context.Context) error {
+    // Your task logic here
+    return nil
+})
 
-### `(g *Group) Wait() error`
+// Start a task that cancels the group only on error
+gr.GoCancelOnError(func(ctx context.Context) error {
+    // Your task logic here
+    return errors.New("task failed")
+})
+```
 
-Blocks until all tasks in the `Group` have completed or been canceled.
+### Controlling the Group
 
-### `(g *Group) Cancel()`
+```go
+// Cancel the group with a specific error
+gr.Cancel(errors.New("operation aborted"))
 
-Explicitly cancels the `Group`'s context, causing all tasks to be interrupted.
+// Cancel the group with ErrClosed
+gr.Close()
 
-## Note
+// Set a timeout for the group
+gr.SetTimeout(5 * time.Second)
 
-- A `Group` must be created by `New` or `NewTimeout`, zero value must not be used.
-- A `Group` must not be copied after first use.
-- A `Group` must not be reused after calling `Wait`.
+// Wait for all tasks to complete
+err := gr.Wait()
+```
+
+## Resource Management
+
+It's important to call either `gr.Close()` or `gr.Cancel()` when a Group is no longer needed to prevent resource leaks. This applies to both Groups created with `New()` and zero-value Groups.
+
+## Thread Safety
+
+`rungroup/v2` is designed to be thread-safe. You can start tasks from multiple goroutines, including from within other tasks in the same group.
+
+## License
+
+[Apache License Version 2.0](LICENSE)
