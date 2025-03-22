@@ -1,8 +1,5 @@
 # rungroup/v2
 
-> **Note:** This is the documentation for **v2** of the `rungroup` module.
-> For **v1** documentation, see [README.v1.md](./README.v1.md).
-
 A Go module for managing and coordinating concurrent tasks with fine-grained control over cancellation.
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/goaux/rungroup/v2.svg)](https://pkg.go.dev/github.com/goaux/rungroup/v2)
